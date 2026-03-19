@@ -1,0 +1,6 @@
+"questionText,optionA,optionB,optionC,optionD,correctAnswer,section,questionType,graphType,graphData"
+"What is the result of 25 + 75?,""80"",""100"",""110"",""120"",""100"",""NUMERICAL"",""MCQ"",,"
+"Based on the chart, which month had the highest sales?,""January"",""February"",""March"",""April"",""February"",""NUMERICAL"",""GRAPH"",""bar"",""{""""labels"""": [""""Jan"""", """"Feb"""", """"Mar""""], """"values"""": [45, 82, 33]}"""
+"Identify the trend shown in the following performance graph.,""Increasing"",""Decreasing"",""Steady"",""Volatile"",""Increasing"",""REASONING"",""GRAPH"",""line"",""{""""labels"""": [""""Q1"""", """"Q2"""", """"Q3"""", """"Q4""""], """"values"""": [10, 25, 40, 60]}"""
+"Which category occupies the largest share of the budget?,""Rent"",""Food"",""Travel"",""Others"",""Food"",""CORE"",""GRAPH"",""pie"",""{""""labels"""": [""""Rent"""", """"Food"""", """"Travel""""], """"values"""": [30, 50, 20]}"""
+"Choose the correctly spelled word.,""Receive"",""Recieve"",""Recieve"",""Receve"",""Receive"",""VERBAL"",""MCQ"",,"

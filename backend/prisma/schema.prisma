@@ -1,0 +1,142 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id            String           @id @default(uuid())
+  name          String
+  section       String           @default("")
+  rollNumber    String           @unique
+  email         String           @unique
+  contactNumber String           @default("")
+  course        String?
+  password      String
+  warnings      Int              @default(0)
+  score         Float            @default(0)
+  role          String           @default("STUDENT")
+  isActive      Boolean          @default(true)
+  deletedAt     DateTime?
+  createdAt     DateTime         @default(now())
+  results       Result[]
+  attempts      StudentAttempt[]
+}
+
+model ValidStudent {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  rollNumber   String    @unique
+  section      String    @default("")
+  dob          DateTime?
+  isRegistered Boolean   @default(false)
+  isActive     Boolean   @default(true)
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+}
+
+model Admin {
+  id       String @id @default(uuid())
+  username String @unique
+  password String
+  role     String @default("ADMIN")
+}
+
+model Exam {
+  id        String           @id @default(uuid())
+  title     String
+  duration  Int
+  startTime DateTime
+  endTime   DateTime
+  createdAt DateTime         @default(now())
+  questions Question[]
+  results   Result[]
+  attempts  StudentAttempt[]
+}
+
+model Question {
+  id            String      @id @default(uuid())
+  examId        String
+  questionText  String
+  optionA       String
+  optionB       String
+  optionC       String
+  optionD       String
+  correctAnswer String
+  section       SectionType
+  graphData     Json?
+  graphType     String?
+  questionType  String      @default("MCQ")
+  answers       Answer[]
+  exam          Exam        @relation(fields: [examId], references: [id], onDelete: Cascade)
+}
+
+model StudentAttempt {
+  id            String        @id @default(uuid())
+  studentId     String
+  examId        String
+  startTime     DateTime      @default(now())
+  endTime       DateTime?
+  status        AttemptStatus @default(STARTED)
+  violationCount Int           @default(0)
+  isLocked      Boolean       @default(false)
+  currentQuestionIndex Int     @default(0)
+  remainingTime Int?
+  lastActiveAt  DateTime      @default(now())
+  questionOrder Json
+  answers       Answer[]
+  exam          Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student       Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model Answer {
+  id             String         @id @default(uuid())
+  attemptId      String
+  questionId     String
+  selectedOption String?
+  attempt        StudentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question       Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model Result {
+  id             String   @id @default(uuid())
+  studentId      String
+  examId         String
+  reasoningScore Int      @default(0)
+  verbalScore    Int      @default(0)
+  numericalScore Int      @default(0)
+  coreScore      Int      @default(0)
+  totalScore     Int      @default(0)
+  percentage     Float
+  timeTaken      Int
+  submittedAt    DateTime @default(now())
+  exam           Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([examId, totalScore, timeTaken])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  email     String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+enum SectionType {
+  REASONING
+  VERBAL
+  NUMERICAL
+  CORE
+}
+
+enum AttemptStatus {
+  STARTED
+  SUBMITTED
+}
