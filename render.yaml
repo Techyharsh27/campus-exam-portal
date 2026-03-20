@@ -32,7 +32,7 @@ services:
   # Frontend Static Site
   - type: web
     name: campus-portal-web
-    runtime: static
+    env: static
     plan: free
     buildCommand: npm install && npm run build
     staticPublishDir: dist
