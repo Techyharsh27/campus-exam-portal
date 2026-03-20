@@ -1,0 +1,55 @@
+services:
+  # Backend API
+  - type: web
+    name: campus-portal-api
+    runtime: node
+    plan: free # Change to a different plan if needed
+    buildCommand: npm install && npx prisma generate
+    startCommand: npx prisma db push && npm start
+    env: static
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: campus-portal-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: campus-portal-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: campus-portal-web
+          property: url
+
+  # Frontend Static Site
+  - type: web
+    name: campus-portal-web
+    runtime: static
+    plan: free
+    buildCommand: npm install && npm run build
+    staticPublishDir: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: campus-portal-api
+          property: url
+        suffix: /api
+
+databases:
+  - name: campus-portal-db
+    plan: free # Render's free PostgreSQL tier
+
+# (Optional) Redis for rate limiting
+# Uncomment if needed, or remove if you want to save on free tier resources
+# redis:
+#   - name: campus-portal-redis
+#     plan: free
