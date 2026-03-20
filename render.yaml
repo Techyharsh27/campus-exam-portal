@@ -30,9 +30,8 @@ services:
           property: url
 
   # Frontend Static Site
-  - type: web
+  - type: static
     name: campus-portal-web
-    env: static
     plan: free
     buildCommand: npm install && npm run build
     staticPublishDir: dist
