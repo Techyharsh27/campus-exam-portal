@@ -33,10 +33,12 @@ const PORT = process.env.PORT || 5000;
 app.use(helmet());
 
 // Dynamic CORS configuration
+const frontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : null;
 const allowedOrigins = [
-  process.env.FRONTEND_URL,
+  frontendUrl,
   'http://localhost:5173',
-  'http://localhost:5174' // Support local development fallback port
+  'http://localhost:5174',
+  'http://localhost:3000'
 ].filter(Boolean);
 
 app.use(cors({
