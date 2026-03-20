@@ -29,13 +29,6 @@ services:
     env: static
     buildCommand: npm install && npm run build
     staticPublishDir: dist
-    envVars:
-      - key: VITE_API_URL
-        fromService:
-          type: web
-          name: campus-portal-api
-          property: url
-        suffix: /api
 
 databases:
   - name: campus-portal-db
