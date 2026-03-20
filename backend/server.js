@@ -18,7 +18,10 @@ const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar] || 
 
 if (missingEnvVars.length > 0) {
   console.error(`CRITICAL ERROR: Missing or placeholder environment variables: ${missingEnvVars.join(', ')}`);
-  if (process.env.NODE_ENV === 'production') {
+  // Only exit if DATABASE_URL or JWT_SECRET are missing, as they are truly critical for any operation
+  const fatalVars = ['DATABASE_URL', 'JWT_SECRET'];
+  const missingFatal = missingEnvVars.filter(v => fatalVars.includes(v));
+  if (missingFatal.length > 0 && process.env.NODE_ENV === 'production') {
     process.exit(1);
   }
 }
