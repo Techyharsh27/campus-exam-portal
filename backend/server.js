@@ -43,9 +43,17 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
+    // Log for debugging on Render
+    console.log('CORS Request Origin:', origin);
+    console.log('Allowed Origins:', allowedOrigins);
+
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+    
+    const isAllowed = allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production';
+    console.log('CORS Allowed:', isAllowed);
+    
+    if (isAllowed) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -55,6 +63,13 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
+// Request Logger for debugging on Render
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  if (req.method !== 'GET') console.log('Body:', req.body);
+  next();
+});
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -74,6 +89,13 @@ app.use('/api/auth', authLimiter);
 // Built-in Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Request Logger for debugging on Render
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  if (req.method !== 'GET') console.log('Body:', req.body);
+  next();
+});
 
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 const logger = require('./config/logger');
