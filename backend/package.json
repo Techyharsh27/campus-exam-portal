@@ -4,6 +4,7 @@
   "description": "CAMPUS Secure Online Examination Portal Backend",
   "main": "server.js",
   "scripts": {
+    "postinstall": "prisma generate",
     "start": "node cluster.js",
     "dev": "nodemon server.js"
   },

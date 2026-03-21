@@ -156,6 +156,10 @@ function QuestionList({ examId }) {
         alert('Please select the correct answer');
         return;
     }
+    if (form.questionType === 'IMAGE' && !imageFile && !form.imageUrl) {
+        alert('Please attach an image for image-based questions.');
+        return;
+    }
     setSaving(true);
 
     let finalImageUrl = form.imageUrl;
@@ -335,8 +339,9 @@ function QuestionList({ examId }) {
                 onChange={(e) => setForm({ ...form, questionType: e.target.value })}
                 className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                <option value="MCQ">Standard MCQ</option>
-                <option value="GRAPH">Graph Based</option>
+                <option value="MCQ">Standard MCQ (Text only)</option>
+                <option value="IMAGE">🖼️ Image Based (Image required)</option>
+                <option value="GRAPH">Graph Based (JSON Chart)</option>
               </select>
             </div>
           </div>
@@ -368,34 +373,41 @@ function QuestionList({ examId }) {
             </div>
           )}
 
-          <div className="py-2 border-t border-b border-gray-100 my-2">
-            <label className="mb-1 block text-sm font-medium text-gray-700">Attach Image / Diagram</label>
-            <div className="flex items-center gap-4">
-              {imagePreview && (
-                <div className="relative w-20 h-20 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
-                  <img src={imagePreview.startsWith('http') || imagePreview.startsWith('data:') ? imagePreview : `${import.meta.env.VITE_API_BASE_URL || ''}/uploads/${imagePreview.replace(/^.*[\\\/]/, '')}`} alt="preview" className="max-h-full max-w-full object-contain" />
-                  <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); setForm({...form, imageUrl: ''}); }} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
+          {/* Image Upload - required for IMAGE type, hidden for all other types */}
+          {form.questionType === 'IMAGE' && (
+            <div className="py-2 border-t border-b border-blue-100 my-2 bg-blue-50 rounded-xl px-3">
+              <label className="mb-1 block text-sm font-medium text-blue-800">
+                🖼️ Attach Image / Diagram <span className="text-red-500 text-xs">(Required for Image-Based Question)</span>
+              </label>
+              <div className="flex items-center gap-4">
+                {imagePreview && (
+                  <div className="relative w-20 h-20 bg-gray-50 border border-blue-200 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <img src={imagePreview.startsWith('http') || imagePreview.startsWith('data:') ? imagePreview : `${import.meta.env.VITE_API_BASE_URL || ''}/uploads/${imagePreview.replace(/^.*[\\\/]/, '')}`} alt="preview" className="max-h-full max-w-full object-contain" />
+                    <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); setForm({...form, imageUrl: ''}); }} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
+                  </div>
+                )}
+                <div className="flex-1">
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    required
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        setImageFile(file);
+                        const reader = new FileReader();
+                        reader.onload = (e) => setImagePreview(e.target.result);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"
+                  />
+                  {!imagePreview && !imageFile && <p className="text-xs text-red-500 mt-1">An image is required for image-based questions.</p>}
                 </div>
-              )}
-              <div className="flex-1">
-                 <input 
-                   type="file" 
-                   accept="image/*"
-                   onChange={(e) => {
-                     const file = e.target.files[0];
-                     if (file) {
-                       setImageFile(file);
-                       const reader = new FileReader();
-                       reader.onload = (e) => setImagePreview(e.target.result);
-                       reader.readAsDataURL(file);
-                     }
-                   }}
-                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                 />
               </div>
+              {uploadingImage && <p className="text-xs text-blue-600 mt-1 animate-pulse">Uploading image securely...</p>}
             </div>
-            {uploadingImage && <p className="text-xs text-indigo-600 mt-1 animate-pulse">Uploading image securely...</p>}
-          </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
