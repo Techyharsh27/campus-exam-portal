@@ -60,8 +60,8 @@ export default function ExamPage() {
   const answersRef = useRef({});
 
   useEffect(() => { 
-    answersRef.current = { ...answers, isConfirming }; 
-  }, [answers, isConfirming]);
+    answersRef.current = answers; 
+  }, [answers]);
 
   const handleSubmit = useCallback(async (auto = false) => {
     if (isSubmitting || !!result) return;
@@ -121,7 +121,7 @@ export default function ExamPage() {
     };
 
     const handleBlur = () => {
-      if (answersRef.current.isConfirming) return; // Ignore blur if browser dialog is open
+      if (isConfirming) return; // Ignore blur if browser dialog is open
       handleViolation('Window lost focus');
     };
 
@@ -200,7 +200,7 @@ export default function ExamPage() {
     if (!attemptId || !!result || isLocked) return;
     const saveInterval = setInterval(async () => {
       try {
-        const { isConfirming, ...cleanAnswers } = answersRef.current;
+        const cleanAnswers = answersRef.current;
         await studentExamService.saveState(examId, {
           attemptId,
           currentQuestionIndex: currentIdx,
@@ -219,7 +219,7 @@ export default function ExamPage() {
     if (!attemptId || !!result || isLocked) return;
     const handler = setTimeout(async () => {
       try {
-        const { isConfirming, ...cleanAnswers } = answersRef.current;
+        const cleanAnswers = answersRef.current;
         await studentExamService.saveState(examId, {
           attemptId,
           currentQuestionIndex: currentIdx,
@@ -535,11 +535,11 @@ export default function ExamPage() {
                 {q?.options.map((optContent, i) => {
                   const optLabels = ['A', 'B', 'C', 'D'];
                   const label = optLabels[i];
-                  const isSelected = answers[q?.id] === optContent;
+                  const isSelected = answers[q?.id] === label;
                   return (
                     <button
                       key={i}
-                      onClick={() => setAnswers({ ...answers, [q.id]: optContent })}
+                      onClick={() => setAnswers({ ...answers, [q.id]: label })}
                       className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all ${isSelected
                           ? 'border-indigo-600 bg-indigo-50 shadow-md transform scale-[1.01]'
                           : 'border-gray-100 bg-gray-50 hover:border-indigo-200 hover:bg-white'

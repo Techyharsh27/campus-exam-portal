@@ -176,17 +176,38 @@ const submitExam = async (studentId, examId, attemptId, answers) => {
 
     // Calculate scores
     for (const [questionId, selectedOption] of Object.entries(answers)) {
+        // Skip keys that are not UUIDs (e.g. legacy leakage like 'isConfirming')
+        if (!/^[0-9a-f-]{36}$/i.test(questionId)) continue;
+        
+        // Skip if selectedOption is not a string
+        if (typeof selectedOption !== 'string') continue;
+
         const qData = questionMap.get(questionId);
-        if (qData && qData.answer === selectedOption) {
+        if (!qData) continue;
+
+        let actualSelectedContent = selectedOption;
+
+        // If selectedOption is a label (A, B, C, D), map it to the actual shuffled content
+        const labels = ['A', 'B', 'C', 'D'];
+        if (labels.includes(selectedOption)) {
+            const sectionOrder = attempt.questionOrder[qData.section];
+            const orderObj = sectionOrder?.find(o => o.id === questionId);
+            if (orderObj) {
+                const labelIndex = labels.indexOf(selectedOption);
+                actualSelectedContent = orderObj.options[labelIndex];
+            }
+        }
+
+        if (qData.answer === actualSelectedContent) {
             scores[qData.section]++;
         }
         
-        // Save individual answer for audit
+        // Save individual answer for audit (save the label if provided)
         await prisma.answer.create({
             data: {
                 attemptId,
                 questionId,
-                selectedOption
+                selectedOption: selectedOption
             }
         });
     }
