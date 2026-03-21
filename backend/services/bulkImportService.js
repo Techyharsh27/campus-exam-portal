@@ -110,9 +110,9 @@ const importQuestionsFromCSV = async (examId, filePath) => {
                             correctAnswer: validated.correctAnswer,
                             section: validated.section,
                             questionType: validated.questionType || 'MCQ',
-                            graphData: validated.graphData,
-                            graphType: validated.graphType,
-                            imageUrl: validated.imageUrl
+                            graphData: validated.graphData || null,
+                            graphType: validated.graphType || null,
+                            imageUrl: validated.imageUrl || null
                         });
                         results.success++;
                     } catch (err) {
@@ -201,7 +201,7 @@ const validateRow = (row, index) => {
         section: mappedSection,
         questionType: questionType || 'MCQ',
         graphData: parsedGraphData,
-        graphType: graphType,
+        graphType: graphType || null,
         imageUrl: imageUrl || null
     };
 };
