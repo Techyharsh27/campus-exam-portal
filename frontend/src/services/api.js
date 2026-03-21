@@ -73,3 +73,10 @@ export const securityService = {
     getLockedAttempts: () => api.get('security/locked-attempts'),
     unlockAttempt: (attemptId) => api.post('security/unlock', { attemptId }),
 };
+
+// Upload service for images
+export const uploadService = {
+  uploadImage: (formData) => api.post('upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+};

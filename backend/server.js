@@ -113,6 +113,7 @@ app.use('/api/results', require('./routes/resultRoutes'));
 app.use('/api/warnings', require('./routes/warningRoutes'));
 app.use('/api/student', require('./routes/studentRoutes'));
 app.use('/api/security', require('./routes/securityRoutes'));
+app.use('/api/upload', require('./routes/uploadRoutes'));
 
 // Basic Route for testing
 app.get('/', async (req, res) => {

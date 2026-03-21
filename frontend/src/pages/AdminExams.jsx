@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import { examService, questionService } from '../services/api';
+import { examService, questionService, uploadService } from '../services/api';
 import { Modal } from '../components/Modal';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
@@ -88,10 +88,14 @@ function QuestionList({ examId }) {
     section: 'REASONING',
     questionType: 'MCQ',
     graphType: 'bar',
-    graphData: '' 
+    graphData: '',
+    imageUrl: ''
   });
   const [saving, setSaving] = useState(false);
-  
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
   // Bulk upload state
   const [bulkFile, setBulkFile] = useState(null);
   const [bulkPreview, setBulkPreview] = useState([]);
@@ -113,8 +117,11 @@ function QuestionList({ examId }) {
         section: 'REASONING',
         questionType: 'MCQ',
         graphType: 'bar',
-        graphData: ''
+        graphData: '',
+        imageUrl: ''
     }); 
+    setImageFile(null);
+    setImagePreview(null);
     setShowModal(true); 
   };
 
@@ -125,8 +132,11 @@ function QuestionList({ examId }) {
       section: q.section,
       questionType: q.questionType || 'MCQ',
       graphType: q.graphType || 'bar',
-      graphData: q.graphData ? JSON.stringify(q.graphData, null, 2) : ''
+      graphData: q.graphData ? JSON.stringify(q.graphData, null, 2) : '',
+      imageUrl: q.imageUrl || ''
     }); 
+    setImageFile(null);
+    setImagePreview(q.imageUrl || null);
     setShowModal(true); 
   };
 
@@ -137,13 +147,33 @@ function QuestionList({ examId }) {
         return;
     }
     setSaving(true);
+
+    let finalImageUrl = form.imageUrl;
+    if (imageFile) {
+        setUploadingImage(true);
+        try {
+            const formData = new FormData();
+            formData.append('image', imageFile);
+            const res = await uploadService.uploadImage(formData);
+            finalImageUrl = res.data.data.url;
+        } catch (err) {
+            alert('Image upload failed: ' + (err.response?.data?.message || err.message));
+            setSaving(false);
+            setUploadingImage(false);
+            return;
+        }
+        setUploadingImage(false);
+    }
+
     const payload = {
       ...form,
-      graphData: form.questionType === 'GRAPH' ? JSON.parse(form.graphData) : null
+      imageUrl: finalImageUrl,
+      graphData: form.questionType === 'GRAPH' && form.graphData ? JSON.parse(form.graphData) : null
     };
     try {
       if (editQ) await questionService.updateQuestion(editQ.id, payload);
       else await questionService.addQuestion(examId, payload);
+
       setShowModal(false);
       load();
     } catch (err) {
@@ -232,11 +262,12 @@ function QuestionList({ examId }) {
             <div key={q.id} className="bg-white border border-gray-100 rounded-xl p-4">
               <div className="flex justify-between items-start mb-2">
                 <div className="flex-1 pr-4">
-                   <div className="flex items-center gap-2 mb-1">
+                     <div className="flex items-center gap-2 mb-1">
                        <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded uppercase">{q.section}</span>
                        <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${q.questionType === 'GRAPH' ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'}`}>
                          {q.questionType || 'MCQ'}
                        </span>
+                       {q.imageUrl && <span className="text-xs font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">🖼️ IMAGE</span>}
                        <span className="text-xs text-gray-400">Q{i + 1}</span>
                    </div>
                    <p className="font-medium text-gray-800">{q.questionText}</p>
@@ -317,6 +348,35 @@ function QuestionList({ examId }) {
               </div>
             </div>
           )}
+
+          <div className="py-2 border-t border-b border-gray-100 my-2">
+            <label className="mb-1 block text-sm font-medium text-gray-700">Attach Image / Diagram</label>
+            <div className="flex items-center gap-4">
+              {imagePreview && (
+                <div className="relative w-20 h-20 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                  <img src={imagePreview.startsWith('http') || imagePreview.startsWith('data:') ? imagePreview : `${import.meta.env.VITE_API_BASE_URL || ''}/uploads/${imagePreview.replace(/^.*[\\\/]/, '')}`} alt="preview" className="max-h-full max-w-full object-contain" />
+                  <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); setForm({...form, imageUrl: ''}); }} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
+                </div>
+              )}
+              <div className="flex-1">
+                 <input 
+                   type="file" 
+                   accept="image/*"
+                   onChange={(e) => {
+                     const file = e.target.files[0];
+                     if (file) {
+                       setImageFile(file);
+                       const reader = new FileReader();
+                       reader.onload = (e) => setImagePreview(e.target.result);
+                       reader.readAsDataURL(file);
+                     }
+                   }}
+                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                 />
+              </div>
+            </div>
+            {uploadingImage && <p className="text-xs text-indigo-600 mt-1 animate-pulse">Uploading image securely...</p>}
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>

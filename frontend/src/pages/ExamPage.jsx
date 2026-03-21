@@ -461,12 +461,20 @@ export default function ExamPage() {
               <p className="text-xl font-bold text-gray-900 leading-relaxed mb-6">{q?.questionText}</p>
 
               {q?.imageUrl && (
-                <div className="mb-6 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-gray-50 flex justify-center">
+                <div className="mb-6 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-gray-50 flex justify-center relative min-h-[100px]">
                   <img 
-                    src={q.imageUrl.startsWith('http') ? q.imageUrl : `${import.meta.env.VITE_API_BASE_URL || ''}/uploads/${q.imageUrl.replace(/^.*[\\\/]/, '')}`} 
+                    src={q.imageUrl.startsWith('http') || q.imageUrl.startsWith('data:') ? q.imageUrl : `${import.meta.env.VITE_API_BASE_URL || ''}/uploads/${q.imageUrl.replace(/^.*[\\\/]/, '')}`} 
                     alt="Question visual" 
-                    className="max-h-[400px] object-contain"
+                    className="max-h-[400px] object-contain z-10"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
                   />
+                  <div className="absolute inset-0 flex-col items-center justify-center text-gray-400 font-medium hidden bg-gray-100 h-[200px]">
+                    <span className="text-3xl mb-2">⚠️</span>
+                    Image failed to load
+                  </div>
                 </div>
               )}
 
