@@ -59,6 +59,7 @@ export const resultService = {
   getMyResults: () => api.get('results/my-results'),
   getAllResults: () => api.get('results/all'),
   getExamResults: (examId) => api.get(`results/exam/${examId}`),
+  downloadPDF: (id) => api.get(`results/${id}/pdf`, { responseType: 'blob' }),
 };
 
 // Warning service method

@@ -22,12 +22,23 @@ const getResultsByExam = async (examId) => {
     return await prisma.result.findMany({
         where: { examId },
         include: { student: { select: { name: true, rollNumber: true } } },
-        orderBy: { score: 'desc' }
+        orderBy: { totalScore: 'desc' }
+    });
+};
+
+const getResultById = async (id) => {
+    return await prisma.result.findUnique({
+        where: { id },
+        include: {
+            student: true,
+            exam: true
+        }
     });
 };
 
 module.exports = {
     getStudentResults,
     getAllResults,
-    getResultsByExam
+    getResultsByExam,
+    getResultById
 };
