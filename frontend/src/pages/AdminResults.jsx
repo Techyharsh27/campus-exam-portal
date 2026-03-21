@@ -57,7 +57,7 @@ export default function AdminResults() {
                   <td className="px-6 py-4 font-medium text-gray-900">{r.student?.name}</td>
                   <td className="px-6 py-4 text-gray-500">{r.student?.rollNumber}</td>
                   <td className="px-6 py-4 text-gray-600">{r.exam?.title}</td>
-                  <td className="px-6 py-4 text-center font-semibold text-indigo-600">{r.score}</td>
+                  <td className="px-6 py-4 text-center font-semibold text-indigo-600">{r.totalScore}</td>
                   <td className="px-6 py-4 text-center">
                     <span className={`font-bold text-sm px-2 py-0.5 rounded-full ${r.percentage >= 60 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
                       {r.percentage?.toFixed(1)}%

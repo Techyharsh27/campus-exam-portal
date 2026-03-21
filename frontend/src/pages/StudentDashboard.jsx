@@ -190,8 +190,8 @@ export default function StudentDashboard() {
                                 <p className="text-[10px] text-gray-400 font-bold">EXAM ID: {r.examId.slice(0, 8)}</p>
                               </td>
                               <td className="px-6 py-5 text-center">
-                                <span className="font-black text-indigo-600 text-base">{r.score}</span>
-                                <span className="text-gray-400 text-xs font-bold"> / {r.exam?.totalMarks}</span>
+                                <span className="font-black text-indigo-600 text-base">{r.totalScore}</span>
+                                <span className="text-gray-400 text-xs font-bold"> / 80</span>
                               </td>
                               <td className="px-6 py-5 text-center">
                                 <span className={`px-4 py-1.5 rounded-full text-xs font-black ${r.percentage >= 60 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>

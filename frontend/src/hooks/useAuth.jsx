@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (credentials, type = 'student') => {
-    const endpoint = type === 'admin' ? '/auth/admin/login' : '/auth/student/login';
+    const endpoint = type === 'admin' ? 'auth/admin/login' : 'auth/student/login';
     const { data } = await api.post(endpoint, credentials);
     
     if (data.success) {

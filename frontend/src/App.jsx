@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { NavigationGuard } from './components/NavigationGuard';
 import { Toaster } from 'react-hot-toast';
 
 // Pages
@@ -28,28 +29,16 @@ function App() {
 
           {/* Student Protected Routes */}
           <Route
-            path="/student"
+            path="/student/*"
             element={
               <ProtectedRoute allowedRoles={['STUDENT']}>
-                <StudentDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/student/exam/:examId"
-            element={
-              <ProtectedRoute allowedRoles={['STUDENT']}>
-                <ExamPage />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Admin Protected Routes */}
-          <Route
-            path="/student/leaderboard/:examId"
-            element={
-              <ProtectedRoute allowedRoles={['STUDENT']}>
-                <LeaderboardPage />
+                <NavigationGuard>
+                  <Routes>
+                    <Route index element={<StudentDashboard />} />
+                    <Route path="exam/:examId" element={<ExamPage />} />
+                    <Route path="leaderboard/:examId" element={<LeaderboardPage />} />
+                  </Routes>
+                </NavigationGuard>
               </ProtectedRoute>
             }
           />

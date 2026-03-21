@@ -30,7 +30,14 @@ export default function LoginPage() {
       const user = await login(creds, tab);
       navigate(user.role === 'ADMIN' ? '/admin' : '/student');
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Login failed');
+      console.error('Login error:', err);
+      if (err.code === 'ERR_NETWORK') {
+        setError('Network Error: Cannot connect to the server. Please check your internet or if the backend is running.');
+      } else if (err.response) {
+        setError(err.response.data?.message || `Error ${err.response.status}: Login failed`);
+      } else {
+        setError(err.message || 'An unexpected error occurred during login');
+      }
     } finally {
       setIsLoading(false);
     }

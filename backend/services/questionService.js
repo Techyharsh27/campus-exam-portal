@@ -1,7 +1,7 @@
 const prisma = require('../config/db');
 
 const addQuestion = async (examId, data) => {
-  const { questionText, optionA, optionB, optionC, optionD, correctAnswer, section, questionType, graphData, graphType } = data;
+  const { questionText, optionA, optionB, optionC, optionD, correctAnswer, section, questionType, graphData, graphType, imageUrl } = data;
   return await prisma.question.create({
     data: {
       examId,
@@ -15,6 +15,7 @@ const addQuestion = async (examId, data) => {
       questionType: questionType || 'MCQ',
       graphData: graphData || null,
       graphType: graphType || null,
+      imageUrl: imageUrl || null,
     },
   });
 };
@@ -26,7 +27,7 @@ const getQuestionsByExam = async (examId) => {
 };
 
 const updateQuestion = async (id, data) => {
-  const { questionText, optionA, optionB, optionC, optionD, correctAnswer, section, questionType, graphData, graphType } = data;
+  const { questionText, optionA, optionB, optionC, optionD, correctAnswer, section, questionType, graphData, graphType, imageUrl } = data;
   return await prisma.question.update({
     where: { id },
     data: {
@@ -40,6 +41,7 @@ const updateQuestion = async (id, data) => {
       ...(questionType && { questionType }),
       ...(graphData !== undefined && { graphData }),
       ...(graphType !== undefined && { graphType }),
+      ...(imageUrl !== undefined && { imageUrl }),
     },
   });
 };

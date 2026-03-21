@@ -56,6 +56,7 @@ const registerStudent = async (data) => {
         section: validStudent.section || section || '',
         rollNumber: validStudent.rollNumber,
         email: validStudent.email,
+        dob: validStudent.dob,
         contactNumber: contactNumber || '',
         password: hashedPassword,
       },
@@ -154,7 +155,7 @@ const forgotPassword = async (email) => {
     data: { token, email, expiresAt }
   });
 
-  const resetUrl = `${process.env.APP_URL || 'http://localhost:5173'}/reset-password?token=${token}`;
+  const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${token}`;
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa; padding: 40px 20px;">

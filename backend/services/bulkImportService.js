@@ -89,6 +89,7 @@ const importQuestionsFromCSV = async (examId, filePath) => {
                         if (h.includes('graph')) return 'graphType';
                     }
                     if (h.includes('graphdata') || h.includes('graph data')) return 'graphData';
+                    if (h.includes('imageurl') || h.includes('image url') || h.includes('image_url')) return 'imageUrl';
                     return cleanHeader;
                 }
             }))
@@ -110,7 +111,8 @@ const importQuestionsFromCSV = async (examId, filePath) => {
                             section: validated.section,
                             questionType: validated.questionType || 'MCQ',
                             graphData: validated.graphData,
-                            graphType: validated.graphType
+                            graphType: validated.graphType,
+                            imageUrl: validated.imageUrl
                         });
                         results.success++;
                     } catch (err) {
@@ -143,7 +145,7 @@ const validateRow = (row, index) => {
     const data = {};
     Object.keys(row).forEach(key => { data[key] = row[key] ? row[key].trim() : ''; });
 
-    const { questionText, optionA, optionB, optionC, optionD, correctAnswer, section, questionType, graphData, graphType } = data;
+    const { questionText, optionA, optionB, optionC, optionD, correctAnswer, section, questionType, graphData, graphType, imageUrl } = data;
 
     if (!questionText || !optionA || !optionB || !optionC || !optionD || !correctAnswer || !section) {
         const foundKeys = Object.keys(row);
@@ -199,7 +201,8 @@ const validateRow = (row, index) => {
         section: mappedSection,
         questionType: questionType || 'MCQ',
         graphData: parsedGraphData,
-        graphType: graphType
+        graphType: graphType,
+        imageUrl: imageUrl || null
     };
 };
 

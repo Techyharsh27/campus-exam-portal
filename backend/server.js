@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const dotenv = require('dotenv');
+const path = require('path');
 const rateLimit = require('express-rate-limit');
 require('express-async-errors'); // Async error handling
 
@@ -73,7 +74,7 @@ app.use((req, res, next) => {
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per `window`
+  max: 1000, // Increased to 1000 to avoid 429 during exams
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -81,7 +82,7 @@ app.use('/api', limiter);
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20, // More restrictive for auth
+  max: 100, // Increased for better UX during multi-device login
   message: { success: false, message: 'Too many requests from this IP, please try again after 15 minutes' }
 });
 app.use('/api/auth', authLimiter);
@@ -90,12 +91,8 @@ app.use('/api/auth', authLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Request Logger for debugging on Render
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  if (req.method !== 'GET') console.log('Body:', req.body);
-  next();
-});
+// Serve static files from uploads folder
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 const logger = require('./config/logger');

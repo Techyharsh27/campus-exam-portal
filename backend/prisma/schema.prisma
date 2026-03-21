@@ -14,6 +14,7 @@ model Student {
   rollNumber    String           @unique
   email         String           @unique
   contactNumber String           @default("")
+  dob           DateTime?
   course        String?
   password      String
   warnings      Int              @default(0)
@@ -70,6 +71,7 @@ model Question {
   section       SectionType
   graphData     Json?
   graphType     String?
+  imageUrl      String?
   questionType  String      @default("MCQ")
   answers       Answer[]
   exam          Exam        @relation(fields: [examId], references: [id], onDelete: Cascade)

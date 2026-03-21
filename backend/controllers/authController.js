@@ -9,22 +9,32 @@ const registerStudent = async (req, res) => {
   }
 };
 
+const logger = require('../config/logger');
+
 const loginStudent = async (req, res) => {
+  const { email } = req.body;
+  logger.info(`Login attempt for student: ${email}`);
   try {
     const { email, password } = req.body;
     const data = await authService.loginStudent(email, password);
+    logger.info(`Successful login for student: ${email}`);
     res.status(200).json({ success: true, data });
   } catch (error) {
+    logger.error(`Failed login attempt for student: ${email} - Error: ${error.message}`);
     res.status(401).json({ success: false, message: error.message });
   }
 };
 
 const loginAdmin = async (req, res) => {
+  const { username } = req.body;
+  logger.info(`Login attempt for admin: ${username}`);
   try {
     const { username, password } = req.body;
     const data = await authService.loginAdmin(username, password);
+    logger.info(`Successful login for admin: ${username}`);
     res.status(200).json({ success: true, data });
   } catch (error) {
+    logger.error(`Failed login attempt for admin: ${username} - Error: ${error.message}`);
     res.status(401).json({ success: false, message: error.message });
   }
 };

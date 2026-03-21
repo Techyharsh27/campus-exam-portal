@@ -66,6 +66,7 @@ export default function ExamPage() {
     try {
       const res = await studentExamService.submitExam(examId, attemptId, answersRef.current);
       setResult(res.data.data);
+      localStorage.removeItem('activeExamId');
       if (document.fullscreenElement) {
         document.exitFullscreen?.();
       }
@@ -84,6 +85,7 @@ export default function ExamPage() {
     
     try {
       await securityService.reportViolation(attemptId, reason);
+      localStorage.removeItem('activeExamId');
       if (document.fullscreenElement) {
         document.exitFullscreen?.();
       }
@@ -121,14 +123,14 @@ export default function ExamPage() {
       // Block Alt key
       if (e.altKey) {
         e.preventDefault();
-        lockExam('Alt key pressed');
+        console.warn('Alt key blocked');
         return;
       }
 
       // Block F12 (DevTools)
       if (e.key === 'F12') {
         e.preventDefault();
-        lockExam('DevTools access attempted (F12)');
+        console.warn('DevTools (F12) blocked');
         return;
       }
 
@@ -137,7 +139,7 @@ export default function ExamPage() {
         const forbidden = ['c', 'v', 'u', 'i', 's', 'p', 'j', 'Shift'];
         if (forbidden.includes(e.key) || forbidden.includes(e.code)) {
           e.preventDefault();
-          lockExam(`Forbidden keyboard combination: Ctrl + ${e.key}`);
+          console.warn(`Forbidden keyboard combination: Ctrl + ${e.key} blocked`);
           return;
         }
       }
@@ -151,7 +153,7 @@ export default function ExamPage() {
 
     const disableCopyPaste = (e) => {
       e.preventDefault();
-      lockExam('Copy/Paste attempted');
+      console.warn('Copy/Paste/Selection blocked');
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -214,6 +216,7 @@ export default function ExamPage() {
         const { exam, attemptId: aid, questions: qs, attempt, currentQuestionIndex, remainingTime } = res.data.data;
         setQuestions(qs);
         setAttemptId(aid);
+        localStorage.setItem('activeExamId', examId);
         
         if (attempt?.isLocked) {
           setIsLocked(true);
@@ -426,6 +429,16 @@ export default function ExamPage() {
                 </span>
               </div>
               <p className="text-xl font-bold text-gray-900 leading-relaxed mb-6">{q?.questionText}</p>
+
+              {q?.imageUrl && (
+                <div className="mb-6 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-gray-50 flex justify-center">
+                  <img 
+                    src={q.imageUrl.startsWith('http') ? q.imageUrl : `${import.meta.env.VITE_API_BASE_URL || ''}/uploads/${q.imageUrl.replace(/^.*[\\\/]/, '')}`} 
+                    alt="Question visual" 
+                    className="max-h-[400px] object-contain"
+                  />
+                </div>
+              )}
 
               {q?.questionType === 'GRAPH' && q?.graphData && (
                 <div className="mb-8 p-4 bg-gray-50 rounded-2xl border border-gray-100 flex justify-center h-[300px]">

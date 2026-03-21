@@ -8,7 +8,7 @@ import AdminResults from './AdminResults';
 import AdminStudents from './AdminStudents';
 import { usePageTitle } from '../hooks/usePageTitle';
 
-function AdminHome({ exams, results, lockedAttempts, onRefresh }) {
+function AdminHome({ exams, results, lockedAttempts, students, onRefresh }) {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -68,6 +68,7 @@ function AdminHome({ exams, results, lockedAttempts, onRefresh }) {
       setFile(null);
       // Reset file input
       document.getElementById('csv-upload').value = '';
+      onRefresh(); // Refresh dashboard stats to show new students
     } catch (err) {
       console.error('Upload failed', err);
       setUploadResult({
@@ -95,7 +96,8 @@ function AdminHome({ exams, results, lockedAttempts, onRefresh }) {
         {[
           { label: 'Total Exams', value: exams.length, icon: '📝', color: 'bg-indigo-50 text-indigo-700' },
           { label: 'Total Results', value: results.length, icon: '📊', color: 'bg-green-50 text-green-700' },
-          { label: 'Unique Students', value: new Set(results.map((r) => r.studentId)).size, icon: '👥', color: 'bg-purple-50 text-purple-700' },
+          { label: 'Authorized Students', value: students?.length || 0, icon: '👥', color: 'bg-purple-50 text-purple-700' },
+          { label: 'Unique Registered', value: new Set(results.map((r) => r.studentId)).size, icon: '🎓', color: 'bg-amber-50 text-amber-700' },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex items-center gap-4">
             <div className={`text-3xl h-14 w-14 flex items-center justify-center rounded-xl ${s.color}`}>{s.icon}</div>
@@ -273,7 +275,7 @@ function AdminHome({ exams, results, lockedAttempts, onRefresh }) {
                 <tr key={r.id} className="hover:bg-gray-50">
                   <td className="px-6 py-3 font-medium text-gray-900">{r.student?.name}</td>
                   <td className="px-6 py-3 text-gray-500">{r.exam?.title}</td>
-                  <td className="px-6 py-3 text-center font-semibold text-indigo-600">{r.score}</td>
+                  <td className="px-6 py-3 text-center font-semibold text-indigo-600">{r.totalScore}</td>
                   <td className="px-6 py-3 text-center font-bold">
                     <span className={r.percentage >= 60 ? 'text-green-600' : 'text-red-500'}>{r.percentage?.toFixed(1)}%</span>
                   </td>
@@ -295,19 +297,22 @@ export default function AdminDashboard() {
   
   usePageTitle('Admin Dashboard');
   const [results, setResults] = useState([]);
+  const [authorizedStudents, setAuthorizedStudents] = useState([]);
   const [lockedAttempts, setLockedAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     try {
-      const [examsRes, resultsRes, lockedRes] = await Promise.all([
+      const [examsRes, resultsRes, lockedRes, authorizedRes] = await Promise.all([
         examService.getExams(), 
         resultService.getAllResults(),
-        securityService.getLockedAttempts()
+        securityService.getLockedAttempts(),
+        studentService.getAuthorizedStudents()
       ]);
       setExams(examsRes.data.data || []);
       setResults(resultsRes.data.data || []);
       setLockedAttempts(lockedRes.data.data || []);
+      setAuthorizedStudents(authorizedRes.data.data || []);
     } catch (err) {
       console.error('Admin dashboard error', err);
     } finally {
@@ -353,7 +358,7 @@ export default function AdminDashboard() {
 
       <main className="flex-1 max-w-6xl mx-auto w-full p-6">
         <Routes>
-          <Route index element={<AdminHome exams={exams} results={results} lockedAttempts={lockedAttempts} onRefresh={fetchData} />} />
+          <Route index element={<AdminHome exams={exams} results={results} lockedAttempts={lockedAttempts} students={authorizedStudents} onRefresh={fetchData} />} />
           <Route path="students" element={<AdminStudents />} />
           <Route path="exams/*" element={<AdminExams />} />
           <Route path="results" element={<AdminResults />} />

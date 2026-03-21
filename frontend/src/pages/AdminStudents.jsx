@@ -152,6 +152,7 @@ export default function AdminStudents() {
               <tr className="bg-gray-50/50 text-gray-400 text-[10px] font-black uppercase tracking-widest border-b border-gray-100">
                 <th className="px-8 py-6 text-left">Student Info</th>
                 <th className="px-8 py-6 text-left">Roll Number</th>
+                <th className="px-8 py-6 text-left">DOB</th>
                 <th className="px-8 py-6 text-left">Section</th>
                 <th className="px-8 py-6 text-center">Status</th>
                 <th className="px-8 py-6 text-right">Actions</th>
@@ -180,6 +181,11 @@ export default function AdminStudents() {
                       </div>
                     </td>
                     <td className="px-8 py-5 text-gray-600 font-bold">{student.rollNumber}</td>
+                    <td className="px-8 py-5">
+                      <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-black">
+                        {student.dob ? new Date(student.dob).toLocaleDateString('en-GB').replace(/\//g, '-') : 'N/A'}
+                      </span>
+                    </td>
                     <td className="px-8 py-5">
                       <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-black uppercase tracking-wider">
                         {student.section || 'N/A'}

@@ -11,106 +11,146 @@ const importStudentsFromCSV = async (filePath) => {
 
   console.log(`[CSV Import] Starting student processing: ${filePath}`);
 
-  return new Promise((resolve, reject) => {
-    let separator = ',';
-    let content = '';
-    
-    try {
-        const buffer = fs.readFileSync(filePath);
-        if (buffer[0] === 0xFF && buffer[1] === 0xFE) content = buffer.toString('utf16le');
-        else if (buffer[0] === 0xFE && buffer[1] === 0xFF) content = buffer.toString('utf16be');
-        else content = buffer.toString('utf8');
+  let separator = ',';
+  let content = '';
+  
+  try {
+      const buffer = fs.readFileSync(filePath);
+      if (buffer[0] === 0xFF && buffer[1] === 0xFE) content = buffer.toString('utf16le');
+      else if (buffer[0] === 0xFE && buffer[1] === 0xFF) content = buffer.toString('utf16be');
+      else content = buffer.toString('utf8');
 
-        if (content.includes('\0')) content = content.replace(/\0/g, '');
-    } catch (e) { 
-        content = fs.readFileSync(filePath, 'utf8');
-    }
+      if (content.includes('\0')) content = content.replace(/\0/g, '');
+  } catch (e) { 
+      content = fs.readFileSync(filePath, 'utf8');
+  }
 
-    const lines = content.split(/\r?\n/).filter(line => line.trim());
-    if (lines.length === 0) {
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-        return resolve(results);
-    }
+  const lines = content.split(/\r?\n/).filter(line => line.trim());
+  if (lines.length === 0) {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      return results;
+  }
 
-    const firstLine = lines[0];
-    const commaCount = (firstLine.match(/,/g) || []).length;
-    const semiCount = (firstLine.match(/;/g) || []).length;
-    const tabCount = (firstLine.match(/\t/g) || []).length;
-    const pipeCount = (firstLine.match(/\|/g) || []).length;
-    
-    if (semiCount > commaCount && semiCount > tabCount && semiCount > pipeCount) separator = ';';
-    else if (tabCount > commaCount && tabCount > semiCount && tabCount > pipeCount) separator = '\t';
-    else if (pipeCount > commaCount && pipeCount > semiCount && pipeCount > tabCount) separator = '|';
+  const firstLine = lines[0];
+  const commaCount = (firstLine.match(/,/g) || []).length;
+  const semiCount = (firstLine.match(/;/g) || []).length;
+  const tabCount = (firstLine.match(/\t/g) || []).length;
+  const pipeCount = (firstLine.match(/\|/g) || []).length;
+  
+  if (semiCount > commaCount && semiCount > tabCount && semiCount > pipeCount) separator = ';';
+  else if (tabCount > commaCount && tabCount > semiCount && tabCount > pipeCount) separator = '\t';
+  else if (pipeCount > commaCount && pipeCount > semiCount && pipeCount > tabCount) separator = '|';
 
     const { Readable } = require('stream');
-    Readable.from(lines.join('\n'))
-      .pipe(csv({
-        separator: separator,
-        mapHeaders: ({ header }) => {
-          const cleanHeader = header.replace(/[^\x20-\x7E]/g, '').trim();
-          const h = cleanHeader.toLowerCase();
-          if (h.includes('roll')) return 'university_rollno';
-          if (h === 'name' || h === 'student name' || h.includes('student_name')) return 'student_name';
-          if (h.includes('section')) return 'section';
-          if (h.includes('birth') || h.includes('dob')) return 'date_of_birth';
-          if (h.includes('email')) return 'official_email_id';
-          return cleanHeader;
-        }
-      }))
-      .on('data', (row) => students.push(row))
-      .on('end', async () => {
-        try {
-          for (let i = 0; i < students.length; i++) {
-            const row = students[i];
-            const data = {};
-            Object.keys(row).forEach(key => { data[key] = row[key] ? row[key].trim() : ''; });
+    return new Promise((resolve, reject) => {
+        Readable.from(content)
+            .pipe(csv({
+                separator: separator,
+                mapHeaders: ({ header }) => {
+                    const cleanHeader = header.replace(/[^\x20-\x7E]/g, '').trim();
+                    const h = cleanHeader.toLowerCase();
+                    if (h.includes('roll')) return 'university_rollno';
+                    if (h === 'name' || h === 'student name' || h.includes('student_name')) return 'student_name';
+                    if (h.includes('section')) return 'section';
+                    if (h.includes('birth') || h.includes('dob')) return 'date_of_birth';
+                    if (h.includes('email')) return 'official_email_id';
+                    return cleanHeader;
+                }
+            }))
+            .on('data', (row) => {
+                // Ensure row is not completely empty
+                if (Object.values(row).some(v => v && v.toString().trim())) {
+                    students.push(row);
+                }
+            })
+            .on('end', async () => {
+                try {
+                    console.log(`[CSV Import] Total students captured: ${students.length}`);
+                    
+                    if (students.length === 0) {
+                        console.warn('[CSV Import] No valid data rows found in CSV.');
+                        results.errors.push('No valid data rows found in CSV. Please check headers and content.');
+                    }
 
-            const { university_rollno, student_name, section, date_of_birth, official_email_id } = data;
+                    for (let i = 0; i < students.length; i++) {
+                        const row = students[i];
+                        const data = {};
+                        Object.keys(row).forEach(key => { data[key] = row[key] ? row[key].toString().trim() : ''; });
 
-            if (!student_name || !official_email_id || !university_rollno || !date_of_birth) {
-              results.errors.push(`Row ${i + 2}: Missing required fields.`);
-              results.skipped++;
-              continue;
-            }
+                        const { university_rollno, student_name, section, date_of_birth, official_email_id } = data;
+                        const rowIndex = i + 2;
 
-            let parsedDob = null;
-            const dmyMatch = date_of_birth.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
-            if (dmyMatch) parsedDob = new Date(parseInt(dmyMatch[3], 10), parseInt(dmyMatch[2], 10) - 1, parseInt(dmyMatch[1], 10));
-            else {
-                const isoMatch = date_of_birth.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
-                if (isoMatch) parsedDob = new Date(parseInt(isoMatch[1], 10), parseInt(isoMatch[2], 10) - 1, parseInt(isoMatch[3], 10));
-            }
+                        if (!student_name || !official_email_id || !university_rollno || !date_of_birth) {
+                            results.errors.push(`Row ${rowIndex}: Missing required fields (Name, Roll, DOB, or Email).`);
+                            results.skipped++;
+                            continue;
+                        }
 
-            if (!parsedDob || isNaN(parsedDob.getTime())) {
-              results.errors.push(`Row ${i + 2}: Invalid date format for ${official_email_id}.`);
-              results.skipped++;
-              continue;
-            }
+                        let parsedDob = null;
+                        if (date_of_birth) {
+                            const dmyMatch = date_of_birth.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+                            if (dmyMatch) {
+                                parsedDob = new Date(parseInt(dmyMatch[3], 10), parseInt(dmyMatch[2], 10) - 1, parseInt(dmyMatch[1], 10));
+                            } else {
+                                const isoMatch = date_of_birth.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+                                if (isoMatch) {
+                                    parsedDob = new Date(parseInt(isoMatch[1], 10), parseInt(isoMatch[2], 10) - 1, parseInt(isoMatch[3], 10));
+                                } else {
+                                    const fallbackDate = new Date(date_of_birth);
+                                    if (!isNaN(fallbackDate.getTime())) {
+                                        parsedDob = fallbackDate;
+                                    }
+                                }
+                            }
+                        }
 
-            try {
-              await prisma.validStudent.upsert({
-                where: { email: official_email_id.toLowerCase() },
-                update: { name: student_name, rollNumber: university_rollno, section: section || '', dob: parsedDob },
-                create: { name: student_name, email: official_email_id.toLowerCase(), rollNumber: university_rollno, section: section || '', dob: parsedDob, isRegistered: false }
-              });
-              results.success++;
-            } catch (err) {
-              results.errors.push(`Row ${i + 2}: Database error.`);
-              results.skipped++;
-            }
-          }
-          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-          resolve(results);
-        } catch (error) {
-          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-          reject(error);
-        }
-      })
-      .on('error', (error) => {
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-        reject(error);
-      });
-  });
+                        if (!parsedDob || isNaN(parsedDob.getTime())) {
+                            results.errors.push(`Row ${rowIndex}: Invalid date format for ${official_email_id}. Use DD-MM-YYYY.`);
+                            results.skipped++;
+                            continue;
+                        }
+
+                        try {
+                            // Sequential upsert for maximum reliability
+                            await prisma.validStudent.upsert({
+                                where: { email: official_email_id.toLowerCase() },
+                                update: { 
+                                    name: student_name, 
+                                    rollNumber: university_rollno, 
+                                    section: section || '', 
+                                    dob: parsedDob 
+                                },
+                                create: { 
+                                    name: student_name, 
+                                    email: official_email_id.toLowerCase(), 
+                                    rollNumber: university_rollno, 
+                                    section: section || '', 
+                                    dob: parsedDob, 
+                                    isRegistered: false 
+                                }
+                            });
+                            results.success++;
+                        } catch (err) {
+                            console.error(`[CSV Import] DB Error row ${rowIndex}:`, err.message);
+                            results.errors.push(`Row ${rowIndex}: Database error (${err.message.substring(0, 50)}).`);
+                            results.skipped++;
+                        }
+                    }
+                    
+                    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                    resolve(results);
+                } catch (error) {
+                    console.error('[CSV Import] End handler error:', error);
+                    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                    reject(error);
+                }
+            })
+            .on('error', (error) => {
+                console.error('[CSV Import] Stream error:', error);
+                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                reject(error);
+            });
+    });
 };
 
 const getStudentProfile = async (studentId) => {
@@ -131,10 +171,12 @@ const getStudentResults = async (studentId) => {
 };
 
 const getAuthorizedStudents = async () => {
-  return await prisma.validStudent.findMany({
+  const students = await prisma.validStudent.findMany({
     where: { isActive: true },
     orderBy: { createdAt: 'desc' },
   });
+  console.log(`[StudentService] Fetched ${students.length} authorized students`);
+  return students;
 };
 
 const getDeletedStudents = async () => {
