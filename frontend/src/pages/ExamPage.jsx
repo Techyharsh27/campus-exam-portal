@@ -195,33 +195,59 @@ export default function ExamPage() {
     return () => clearInterval(timer);
   }, [handleSubmit, result, timeLeft, isLocked]);
 
-  // Auto-save state every 30 seconds
+  // Auto-save state every 15 seconds (reduced from 30s for higher reliability)
   useEffect(() => {
     if (!attemptId || !!result || isLocked) return;
     const saveInterval = setInterval(async () => {
       try {
+        const { isConfirming, ...cleanAnswers } = answersRef.current;
         await studentExamService.saveState(examId, {
           attemptId,
           currentQuestionIndex: currentIdx,
-          remainingTime: timeLeft
+          remainingTime: timeLeft,
+          answers: cleanAnswers
         });
       } catch (err) {
         console.error('State save failed', err);
       }
-    }, 30000);
+    }, 15000);
     return () => clearInterval(saveInterval);
   }, [examId, attemptId, currentIdx, timeLeft, result, isLocked]);
+
+  // Debounced auto-save upon answer change (prevents data loss on sudden refresh)
+  useEffect(() => {
+    if (!attemptId || !!result || isLocked) return;
+    const handler = setTimeout(async () => {
+      try {
+        const { isConfirming, ...cleanAnswers } = answersRef.current;
+        await studentExamService.saveState(examId, {
+          attemptId,
+          currentQuestionIndex: currentIdx,
+          remainingTime: timeLeft,
+          answers: cleanAnswers
+        });
+      } catch (err) {
+        console.error('Debounced save failed', err);
+      }
+    }, 2000);
+
+    return () => clearTimeout(handler);
+  }, [answers, attemptId, examId, currentIdx, timeLeft, result, isLocked]);
 
   useEffect(() => {
     const load = async () => {
       try {
         const res = await studentExamService.startExam(examId);
-        const { exam, attemptId: aid, questions: qs, attempt, currentQuestionIndex, remainingTime } = res.data.data;
+        const { exam, attemptId: aid, questions: qs, attempt, currentQuestionIndex, remainingTime, savedAnswers } = res.data.data;
         setQuestions(qs);
         setAttemptId(aid);
         setWarnings(attempt?.violationCount || 0);
         localStorage.setItem('activeExamId', examId);
         
+        if (savedAnswers && Object.keys(savedAnswers).length > 0) {
+            setAnswers(savedAnswers);
+        }
+
         if (attempt?.isLocked) {
           setIsLocked(true);
           setWarningMsg(`❌ EXAM LOCKED: Please contact admin.`);

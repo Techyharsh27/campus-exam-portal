@@ -65,10 +65,12 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Request Logger for debugging on Render
+// Request Logger for debugging
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  if (req.method !== 'GET') console.log('Body:', req.body);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    if (req.method !== 'GET') console.log('Body:', req.body);
+  }
   next();
 });
 

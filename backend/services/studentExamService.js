@@ -12,16 +12,45 @@ const shuffleArray = (array) => {
 };
 
 const getExamForStudent = async (studentId, examId) => {
-    const exam = await prisma.exam.findUnique({
-        where: { id: examId },
-        include: { questions: true }
-    });
+    let exam = null;
+    const cacheKey = `exam_full:${examId}`;
+
+    // Try Redis cache first to avoid DB locking under 1000+ concurrent loads
+    if (redisClient && redisClient.isReady) {
+        try {
+            const cachedData = await redisClient.get(cacheKey);
+            if (cachedData) {
+                exam = JSON.parse(cachedData);
+                // Hydrate date fields
+                exam.startTime = new Date(exam.startTime);
+                exam.endTime = new Date(exam.endTime);
+                exam.createdAt = new Date(exam.createdAt);
+            }
+        } catch (err) {
+            console.error('Redis cache exam read error:', err);
+        }
+    }
+
+    if (!exam) {
+        exam = await prisma.exam.findUnique({
+            where: { id: examId },
+            include: { questions: true }
+        });
+
+        // Store in Redis for 5 minutes (300 seconds)
+        if (exam && redisClient && redisClient.isReady) {
+            try {
+                await redisClient.setEx(cacheKey, 300, JSON.stringify(exam));
+            } catch (err) {
+                console.error('Redis cache exam write error:', err);
+            }
+        }
+    }
 
     if (!exam) throw new Error('Exam not found');
 
     const now = new Date();
-    if (now < exam.startTime) throw new Error('Exam has not started yet');
-    // Allow submission even if endTime is passed by a small margin, but start only if before endTime
+    if (now < exam.startTime) throw new Error('Exam has not started yet');    // Allow submission even if endTime is passed by a small margin, but start only if before endTime
     if (now > exam.endTime) throw new Error('Exam has already ended');
 
     // Check if student already has a submitted attempt
@@ -234,13 +263,14 @@ const getLeaderboard = async (examId) => {
 };
 
 const saveExamState = async (studentId, attemptId, data) => {
-    const { currentQuestionIndex, remainingTime } = data;
+    const { currentQuestionIndex, remainingTime, answers } = data;
     
     return await prisma.studentAttempt.update({
         where: { id: attemptId, studentId },
         data: {
             currentQuestionIndex,
             remainingTime,
+            savedAnswers: answers || {},
             lastActiveAt: new Date()
         }
     });

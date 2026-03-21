@@ -91,6 +91,7 @@ model StudentAttempt {
   remainingTime Int?
   lastActiveAt  DateTime      @default(now())
   questionOrder Json
+  savedAnswers  Json          @default("{}")
   answers       Answer[]
   warnings      ExamWarningLog[]
   exam          Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)

@@ -18,6 +18,7 @@ const startExam = async (req, res) => {
                 attemptId: attempt.id,
                 currentQuestionIndex: attempt.currentQuestionIndex,
                 remainingTime: attempt.remainingTime,
+                savedAnswers: attempt.savedAnswers,
                 questions 
             } 
         });
@@ -43,9 +44,9 @@ const saveState = async (req, res) => {
     try {
         const studentId = req.user.id;
         const examId = req.params.examId;
-        const { attemptId, currentQuestionIndex, remainingTime } = req.body;
+        const { attemptId, currentQuestionIndex, remainingTime, answers } = req.body;
 
-        await studentExamService.saveExamState(studentId, attemptId, { currentQuestionIndex, remainingTime });
+        await studentExamService.saveExamState(studentId, attemptId, { currentQuestionIndex, remainingTime, answers });
         res.status(200).json({ success: true, message: 'State saved' });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
