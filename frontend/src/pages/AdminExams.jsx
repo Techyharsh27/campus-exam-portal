@@ -176,9 +176,17 @@ function QuestionList({ examId }) {
     }
 
     const payload = {
-      ...form,
-      imageUrl: finalImageUrl,
-      graphData: form.questionType === 'GRAPH' && form.graphData ? JSON.parse(form.graphData) : null
+      questionText: form.questionText,
+      optionA: form.optionA,
+      optionB: form.optionB,
+      optionC: form.optionC,
+      optionD: form.optionD,
+      correctAnswer: form.correctAnswer,
+      section: form.section,
+      questionType: form.questionType || 'MCQ',
+      graphType: form.questionType === 'GRAPH' ? (form.graphType || 'bar') : null,
+      graphData: form.questionType === 'GRAPH' && form.graphData ? JSON.parse(form.graphData) : null,
+      imageUrl: finalImageUrl || null,
     };
     try {
       if (editQ) await questionService.updateQuestion(editQ.id, payload);
@@ -187,7 +195,8 @@ function QuestionList({ examId }) {
       setShowModal(false);
       load();
     } catch (err) {
-      alert(err.message || 'Error saving question');
+      const backendMsg = err.response?.data?.message || err.message || 'Error saving question';
+      alert('Save failed: ' + backendMsg);
     } finally { setSaving(false); }
   };
 
