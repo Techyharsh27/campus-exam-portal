@@ -33,6 +33,10 @@ const getExamForStudent = async (studentId, examId) => {
         throw new Error('You have already submitted this exam.');
     }
 
+    if (existingAttempt && existingAttempt.isLocked) {
+        throw new Error('Exam is locked due to suspicious activity. Please contact admin.');
+    }
+
     if (existingAttempt) {
         // Return existing order for consistency
         const questionsWithOrder = reconstructQuestions(exam.questions, existingAttempt.questionOrder);

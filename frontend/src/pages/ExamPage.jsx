@@ -55,10 +55,13 @@ export default function ExamPage() {
   const [warningMsg, setWarningMsg] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   const answersRef = useRef({});
 
-  useEffect(() => { answersRef.current = answers; }, [answers]);
+  useEffect(() => { 
+    answersRef.current = { ...answers, isConfirming }; 
+  }, [answers, isConfirming]);
 
   const handleSubmit = useCallback(async (auto = false) => {
     if (isSubmitting || !!result) return;
@@ -109,6 +112,7 @@ export default function ExamPage() {
     };
 
     const handleBlur = () => {
+      if (answersRef.current.isConfirming) return; // Ignore blur if browser dialog is open
       lockExam('Window lost focus');
     };
 
@@ -120,29 +124,10 @@ export default function ExamPage() {
     };
 
     const handleKeyDown = (e) => {
-      // Block Alt key
-      if (e.altKey) {
-        e.preventDefault();
-        console.warn('Alt key blocked');
-        return;
-      }
-
-      // Block F12 (DevTools)
-      if (e.key === 'F12') {
-        e.preventDefault();
-        console.warn('DevTools (F12) blocked');
-        return;
-      }
-
-      // Block Ctrl combinations
-      if (e.ctrlKey) {
-        const forbidden = ['c', 'v', 'u', 'i', 's', 'p', 'j', 'Shift'];
-        if (forbidden.includes(e.key) || forbidden.includes(e.code)) {
-          e.preventDefault();
-          console.warn(`Forbidden keyboard combination: Ctrl + ${e.key} blocked`);
-          return;
-        }
-      }
+      // Total keyboard lock: block ALL keys
+      e.preventDefault();
+      console.warn(`Key ${e.key} blocked`);
+      return false;
     };
 
     const disableContextMenu = (e) => {
@@ -548,9 +533,14 @@ export default function ExamPage() {
                         setActiveSection(SECTIONS[nextSecIdx]);
                         setCurrentIdx(0);
                       } else {
-                        if (window.confirm('Are you sure you want to submit the exam?')) {
-                          handleSubmit(false);
-                        }
+                        setIsConfirming(true);
+                        // Brief timeout to ensure state is flushed before dialog appears
+                        setTimeout(() => {
+                          if (window.confirm('Are you sure you want to submit the exam?')) {
+                            handleSubmit(false);
+                          }
+                          setIsConfirming(false);
+                        }, 50);
                       }
                     }}
                     className={`px-8 py-3 rounded-2xl font-bold transition-all active:scale-95 shadow-lg ${activeSection === 'CORE'

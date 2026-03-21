@@ -74,7 +74,7 @@ app.use((req, res, next) => {
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Increased to 1000 to avoid 429 during exams
+  max: 5000, // Increased to 5000 to handle multiple devices on same NAT IP
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -82,7 +82,7 @@ app.use('/api', limiter);
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100, // Increased for better UX during multi-device login
+  max: 500, // Increased for better UX during campus-wide logins
   message: { success: false, message: 'Too many requests from this IP, please try again after 15 minutes' }
 });
 app.use('/api/auth', authLimiter);
