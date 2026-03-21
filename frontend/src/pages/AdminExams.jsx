@@ -113,6 +113,11 @@ function QuestionList({ examId }) {
   const openAdd = () => { 
     setEditQ(null); 
     setForm({ 
+        questionText: '',
+        optionA: '',
+        optionB: '',
+        optionC: '',
+        optionD: '',
         correctAnswer: '', 
         section: 'REASONING',
         questionType: 'MCQ',
@@ -128,6 +133,11 @@ function QuestionList({ examId }) {
   const openEdit = (q) => { 
     setEditQ(q); 
     setForm({ 
+      questionText: q.questionText || '',
+      optionA: q.optionA || '',
+      optionB: q.optionB || '',
+      optionC: q.optionC || '',
+      optionD: q.optionD || '',
       correctAnswer: q.correctAnswer,
       section: q.section,
       questionType: q.questionType || 'MCQ',
