@@ -5,6 +5,23 @@ import { Modal } from '../components/Modal';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Loader } from '../components/Loader';
+import { toast } from 'react-hot-toast';
+
+// Helper to reliably format a date for datetime-local input (local time)
+const toLocalISOString = (dateInput) => {
+  if (!dateInput) return '';
+  const date = new Date(dateInput);
+  if (isNaN(date.getTime())) return '';
+  
+  // Format as YYYY-MM-DDTHH:mm using local components
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
 
 function ExamForm({ initial, onSave, onCancel }) {
   const [form, setForm] = useState(initial || { title: '', duration: '', startTime: '', endTime: '' });
@@ -14,7 +31,28 @@ function ExamForm({ initial, onSave, onCancel }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    try { await onSave(form); } finally { setSaving(false); }
+    
+    // Ensure dates are sent as ISO strings to avoid timezone shifts
+    const payload = {
+      ...form,
+      startTime: form.startTime ? new Date(form.startTime).toISOString() : '',
+      endTime: form.endTime ? new Date(form.endTime).toISOString() : ''
+    };
+    
+    console.log('[DEBUG] Exam Form Submit:', {
+       localForm: form,
+       payloadUTC: {
+          startTime: payload.startTime,
+          endTime: payload.endTime
+       }
+    });
+    
+    try { 
+      await onSave(payload); 
+      toast.success('Exam saved successfully');
+    } catch (err) {
+      toast.error(err.message || 'Error saving exam');
+    } finally { setSaving(false); }
   };
 
   return (
@@ -412,9 +450,9 @@ function ExamList() {
   };
   useEffect(() => { load(); }, []);
 
-  const handleSave = async (form) => {
-    if (editExam) await examService.updateExam(editExam.id, form);
-    else await examService.createExam(form);
+  const handleSave = async (formPayload) => {
+    if (editExam) await examService.updateExam(editExam.id, formPayload);
+    else await examService.createExam(formPayload);
     setShowModal(false);
     setEditExam(null);
     load();
@@ -463,7 +501,15 @@ function ExamList() {
       )}
 
       <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditExam(null); }} title={editExam ? 'Edit Exam' : 'Create Exam'} size="md">
-        <ExamForm initial={editExam} onSave={handleSave} onCancel={() => { setShowModal(false); setEditExam(null); }} />
+        <ExamForm 
+          initial={editExam ? {
+            ...editExam,
+            startTime: toLocalISOString(editExam.startTime),
+            endTime: toLocalISOString(editExam.endTime)
+          } : null} 
+          onSave={handleSave} 
+          onCancel={() => { setShowModal(false); setEditExam(null); }} 
+        />
       </Modal>
     </div>
   );
