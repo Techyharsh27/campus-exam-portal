@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
-const { upload, useCloudinary } = require('../config/upload');
+const { upload } = require('../config/upload');
 
 router.post('/', protect, adminOnly, upload.single('image'), (req, res) => {
     try {
@@ -9,14 +10,9 @@ router.post('/', protect, adminOnly, upload.single('image'), (req, res) => {
             return res.status(400).json({ success: false, message: 'No image provided.' });
         }
 
-        // Multer creates a `path` property. For Cloudinary, this is the secure HTTPS URL.
-        // For Local storage, we send back just the filename so the frontend maps it to VITE_API_BASE_URL/uploads/...
-        let imageUrl = req.file.path;
-
-        if (!useCloudinary) {
-            // Just send the filename so frontend can build the URL
-            imageUrl = req.file.filename;
-        }
+        // Build a fully qualified URL so the frontend can display it
+        const baseUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+        const imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
 
         res.status(200).json({ 
             success: true, 

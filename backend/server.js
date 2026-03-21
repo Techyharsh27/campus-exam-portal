@@ -93,8 +93,10 @@ app.use('/api/auth', authLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from uploads folder
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve uploaded question images from OS temp dir
+const os = require('os');
+const uploadStaticDir = require('path').join(os.tmpdir(), 'campus_exam_uploads');
+app.use('/uploads', express.static(uploadStaticDir));
 
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 const logger = require('./config/logger');
