@@ -81,16 +81,25 @@ export default function ExamPage() {
     }
   }, [examId, attemptId, navigate, isSubmitting, result]);
 
-  const lockExam = useCallback(async (reason) => {
+  const handleViolation = useCallback(async (reason) => {
     if (!!result || isLocked) return;
-    setIsLocked(true);
-    setWarningMsg(`❌ EXAM LOCKED: ${reason}`);
     
     try {
-      await securityService.reportViolation(attemptId, reason);
-      localStorage.removeItem('activeExamId');
-      if (document.fullscreenElement) {
-        document.exitFullscreen?.();
+      const res = await securityService.reportViolation(attemptId, reason);
+      const attempt = res.data.data;
+      
+      setWarnings(attempt.violationCount);
+      setWarningMsg(res.data.message);
+
+      if (attempt.isLocked) {
+        setIsLocked(true);
+        localStorage.removeItem('activeExamId');
+        if (document.fullscreenElement) {
+          document.exitFullscreen?.();
+        }
+      } else {
+        // Clear non-fatal warning message after 5 seconds
+        setTimeout(() => setWarningMsg(''), 5000);
       }
     } catch (err) {
       console.error('Failed to report violation', err);
@@ -107,18 +116,18 @@ export default function ExamPage() {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        lockExam('Tab/Browser switch detected');
+        handleViolation('Tab/Browser switch detected');
       }
     };
 
     const handleBlur = () => {
       if (answersRef.current.isConfirming) return; // Ignore blur if browser dialog is open
-      lockExam('Window lost focus');
+      handleViolation('Window lost focus');
     };
 
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement && isFullscreen) {
-        lockExam('Fullscreen exited');
+        handleViolation('Fullscreen exited');
         setIsFullscreen(false);
       }
     };
@@ -126,7 +135,16 @@ export default function ExamPage() {
     const handleKeyDown = (e) => {
       // Total keyboard lock: block ALL keys
       e.preventDefault();
-      console.warn(`Key ${e.key} blocked`);
+      // Don't report violation on every single key press (spams API), 
+      // but we can block it. Let's report only critical ones if needed, 
+      // or just trust the visual prevention. For high security, we'll log it.
+      // To prevent API spam if a student rests their hand on the keyboard, 
+      // we only log specific known cheating shortcuts.
+      
+      const isCriticalKey = e.altKey || e.key === 'F12' || (e.ctrlKey && ['c', 'v', 'u', 'i', 'p'].includes(e.key.toLowerCase()));
+      if (isCriticalKey) {
+          handleViolation(`Prohibited key pressed: ${e.key}`);
+      }
       return false;
     };
 
@@ -138,7 +156,7 @@ export default function ExamPage() {
 
     const disableCopyPaste = (e) => {
       e.preventDefault();
-      console.warn('Copy/Paste/Selection blocked');
+      handleViolation('Copy/Paste/Selection attempt');
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -160,7 +178,7 @@ export default function ExamPage() {
       document.removeEventListener('paste', disableCopyPaste);
       document.removeEventListener('selectstart', disableCopyPaste);
     };
-  }, [lockExam, result, isLocked, isFullscreen]);
+  }, [handleViolation, result, isLocked, isFullscreen]);
 
   useEffect(() => {
     if (!!result || timeLeft <= 0 || isLocked) return;
@@ -201,6 +219,7 @@ export default function ExamPage() {
         const { exam, attemptId: aid, questions: qs, attempt, currentQuestionIndex, remainingTime } = res.data.data;
         setQuestions(qs);
         setAttemptId(aid);
+        setWarnings(attempt?.violationCount || 0);
         localStorage.setItem('activeExamId', examId);
         
         if (attempt?.isLocked) {

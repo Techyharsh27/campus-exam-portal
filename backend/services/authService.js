@@ -5,8 +5,8 @@ const prisma = require('../config/db');
 const { sendEmail } = require('../config/email');
 
 // Generate JWT token
-const generateToken = (id, role) => {
-  return jwt.sign({ id, role }, process.env.JWT_SECRET, {
+const generateToken = (id, role, sessionId = null) => {
+  return jwt.sign({ id, role, sessionId }, process.env.JWT_SECRET, {
     expiresIn: '30d',
   });
 };
@@ -48,6 +48,8 @@ const registerStudent = async (data) => {
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
+  const sessionId = crypto.randomUUID();
+
   // Create student and update ValidStudent flag in a transaction
   const [student] = await prisma.$transaction([
     prisma.student.create({
@@ -59,6 +61,7 @@ const registerStudent = async (data) => {
         dob: validStudent.dob,
         contactNumber: contactNumber || '',
         password: hashedPassword,
+        currentSessionId: sessionId,
       },
     }),
     prisma.validStudent.update({
@@ -76,7 +79,7 @@ const registerStudent = async (data) => {
       section: student.section,
       contactNumber: student.contactNumber,
       role: student.role,
-      token: generateToken(student.id, student.role),
+      token: generateToken(student.id, student.role, sessionId),
     };
   } else {
     throw new Error('Failed to create student account');
@@ -89,6 +92,14 @@ const loginStudent = async (email, password) => {
   });
 
   if (student && (await bcrypt.compare(password, student.password))) {
+    const sessionId = crypto.randomUUID();
+    
+    // Update the student's current session in DB
+    await prisma.student.update({
+      where: { id: student.id },
+      data: { currentSessionId: sessionId }
+    });
+
     return {
       _id: student.id,
       name: student.name,
@@ -98,7 +109,7 @@ const loginStudent = async (email, password) => {
       contactNumber: student.contactNumber,
       warnings: student.warnings,
       role: student.role,
-      token: generateToken(student.id, student.role),
+      token: generateToken(student.id, student.role, sessionId),
     };
   } else {
     throw new Error('Invalid email or password');

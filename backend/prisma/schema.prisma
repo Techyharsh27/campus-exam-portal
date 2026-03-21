@@ -21,6 +21,7 @@ model Student {
   score         Float            @default(0)
   role          String           @default("STUDENT")
   isActive      Boolean          @default(true)
+  currentSessionId String?
   deletedAt     DateTime?
   createdAt     DateTime         @default(now())
   results       Result[]
@@ -91,6 +92,7 @@ model StudentAttempt {
   lastActiveAt  DateTime      @default(now())
   questionOrder Json
   answers       Answer[]
+  warnings      ExamWarningLog[]
   exam          Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
   student       Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
@@ -141,4 +143,12 @@ enum SectionType {
 enum AttemptStatus {
   STARTED
   SUBMITTED
+}
+
+model ExamWarningLog {
+  id          String         @id @default(uuid())
+  attemptId   String
+  reason      String
+  timestamp   DateTime       @default(now())
+  attempt     StudentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
 }

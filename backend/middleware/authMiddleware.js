@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const prisma = require('../config/db');
 
 const protect = async (req, res, next) => {
   let token;
@@ -12,6 +13,14 @@ const protect = async (req, res, next) => {
 
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+      // Verify Session ID for students
+      if (decoded.role === 'STUDENT' && decoded.sessionId) {
+        const student = await prisma.student.findUnique({ where: { id: decoded.id } });
+        if (!student || student.currentSessionId !== decoded.sessionId) {
+          return res.status(401).json({ success: false, message: 'Session invalidated. You logged in from another device.' });
+        }
+      }
 
       // Add user info to request
       req.user = decoded;
