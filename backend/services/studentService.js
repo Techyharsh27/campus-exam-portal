@@ -158,12 +158,21 @@ const getStudentProfile = async (studentId) => {
 };
 
 const getUpcomingExams = async () => {
-  return await prisma.exam.findMany({ where: { startTime: { gt: new Date() } }, orderBy: { startTime: 'asc' } });
+  const now = new Date();
+  const exams = await prisma.exam.findMany({ where: { startTime: { gt: now } }, orderBy: { startTime: 'asc' } });
+  console.log(`[DEBUG] getUpcomingExams: found ${exams.length} exams at ${now.toISOString()}`);
+  if (exams.length === 0) {
+    const all = await prisma.exam.count();
+    console.log(`[DEBUG] getUpcomingExams: Total exams in DB: ${all}`);
+  }
+  return exams;
 };
 
 const getActiveExams = async () => {
   const now = new Date();
-  return await prisma.exam.findMany({ where: { startTime: { lte: now }, endTime: { gte: now } }, orderBy: { startTime: 'asc' } });
+  const exams = await prisma.exam.findMany({ where: { startTime: { lte: now }, endTime: { gte: now } }, orderBy: { startTime: 'asc' } });
+  console.log(`[DEBUG] getActiveExams: found ${exams.length} exams at ${now.toISOString()}`);
+  return exams;
 };
 
 const getStudentResults = async (studentId) => {
