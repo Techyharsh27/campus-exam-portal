@@ -463,9 +463,15 @@ export default function ExamPage() {
               {q?.imageUrl && (
                 <div className="mb-6 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-gray-50 flex justify-center relative min-h-[100px]">
                   <img 
-                    src={q.imageUrl.startsWith('http') || q.imageUrl.startsWith('data:') ? q.imageUrl : `${import.meta.env.VITE_API_BASE_URL || ''}/uploads/${q.imageUrl.replace(/^.*[\\\/]/, '')}`} 
+                    src={(() => {
+                      const url = q.imageUrl.startsWith('http') || q.imageUrl.startsWith('data:') 
+                        ? q.imageUrl 
+                        : `${(import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '')}/uploads/${q.imageUrl.replace(/^.*[\\\/]/, '')}`;
+                      return (url && url.startsWith('http://') && window.location.protocol === 'https:') ? url.replace('http://', 'https://') : url;
+                    })()} 
                     alt="Question visual" 
                     className="max-h-[400px] object-contain z-10"
+                    crossOrigin="anonymous"
                     onError={(e) => {
                       e.target.style.display = 'none';
                       e.target.nextSibling.style.display = 'flex';

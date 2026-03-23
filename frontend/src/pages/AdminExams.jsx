@@ -382,7 +382,17 @@ function QuestionList({ examId }) {
               <div className="flex items-center gap-4">
                 {imagePreview && (
                   <div className="relative w-20 h-20 bg-gray-50 border border-blue-200 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
-                    <img src={imagePreview.startsWith('http') || imagePreview.startsWith('data:') ? imagePreview : `${import.meta.env.VITE_API_BASE_URL || ''}/uploads/${imagePreview.replace(/^.*[\\\/]/, '')}`} alt="preview" className="max-h-full max-w-full object-contain" />
+                    <img 
+                      src={(() => {
+                        const url = imagePreview.startsWith('http') || imagePreview.startsWith('data:') 
+                          ? imagePreview 
+                          : `${(import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '')}/uploads/${imagePreview.replace(/^.*[\\\/]/, '')}`;
+                        return (url && url.startsWith('http://') && window.location.protocol === 'https:') ? url.replace('http://', 'https://') : url;
+                      })()} 
+                      alt="preview" 
+                      className="max-h-full max-w-full object-contain" 
+                      crossOrigin="anonymous"
+                    />
                     <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); setForm({...form, imageUrl: ''}); }} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
                   </div>
                 )}

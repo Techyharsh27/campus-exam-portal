@@ -31,7 +31,10 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Security Middleware
-app.use(helmet());
+app.set('trust proxy', 1);
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 
 // Dynamic CORS configuration
 const frontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : null;
