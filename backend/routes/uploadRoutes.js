@@ -10,9 +10,8 @@ router.post('/', protect, adminOnly, upload.single('image'), (req, res) => {
             return res.status(400).json({ success: false, message: 'No image provided.' });
         }
 
-        // Build a fully qualified URL so the frontend can display it
-        const baseUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
-        const imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
+        // Cloudinary returns the permanent URL in req.file.path
+        const imageUrl = req.file.path;
 
         res.status(200).json({ 
             success: true, 

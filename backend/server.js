@@ -96,10 +96,7 @@ app.use('/api/auth', authLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded question images from OS temp dir
-const os = require('os');
-const uploadStaticDir = require('path').join(os.tmpdir(), 'campus_exam_uploads');
-app.use('/uploads', express.static(uploadStaticDir));
+// Question images are now served from Cloudinary CDN (no local static serving needed)
 
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 const logger = require('./config/logger');

@@ -1,22 +1,21 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
-const os = require('os');
+const { v2: cloudinary } = require('cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-// Use OS-level temp/uploads dir so it always exists on both localhost and Render
-const uploadDir = path.join(os.tmpdir(), 'campus_exam_uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
+// Configure Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + crypto.randomBytes(4).toString('hex');
-        cb(null, 'question-' + uniqueSuffix + path.extname(file.originalname).toLowerCase());
+// Cloudinary storage engine for multer
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'campus_exam_questions',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+        transformation: [{ quality: 'auto', fetch_format: 'auto' }]
     }
 });
 
@@ -34,6 +33,6 @@ const upload = multer({
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
-console.log('[Upload Config] Using OS Temp Disk Storage:', uploadDir);
+console.log('[Upload Config] Using Cloudinary Storage');
 
-module.exports = { upload, uploadDir };
+module.exports = { upload, cloudinary };
